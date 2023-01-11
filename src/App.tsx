@@ -15,6 +15,9 @@ import Settings from "src/pages/Settings";
 import { Address, DecoratedTx, DecoratedUtxo } from "src/types";
 import { getNewMnemonic,getMasterPrivateKey, getXpubFromPrivateKey, deriveChildPublicKey, getAddressFromChildPubkey } from "./utils/bitcoinjs-lib";
 import { BIP32Interface } from "bip32";
+import axios from 'axios'; 
+
+const BASE_URL = 'https://blockstream.info/api/address';
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -86,7 +89,14 @@ export default function App() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        throw new Error("Function not implemented yet");
+          const transactions:DecoratedTx[] = [] 
+          for(let i=0;i<transactions.length;i++){
+            const { data } = await axios.get(`${BASE_URL}/${transactions[i]}/txs`);
+            console.log(data)
+            transactions.push(data)
+
+          }
+          setTransactions(transactions)
       } catch (e) {
         console.log(e);
       }
