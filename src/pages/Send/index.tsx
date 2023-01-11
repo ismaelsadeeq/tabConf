@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Psbt } from "bitcoinjs-lib";
 
-import { broadcastTx } from "src/utils/blockstream-api";
+import {  broadcastTx } from "src/utils/blockstream-api";
 
 import CreateTxForm from "./components/CreateTxForm";
 import TransactionSummary from "./components/TransactionSummary";
@@ -27,7 +27,9 @@ export default function Send({ utxos, changeAddresses, mnemonic }: Props) {
     try {
       const currentPsbt =  await createTransaction(utxos,recipientAddress,amountToSend,changeAddresses[0])
       const signedPsbt = await signTransaction(currentPsbt,mnemonic)
-      signedPsbt.extractTransaction().toHex()
+      const signedHex = signedPsbt.extractTransaction().toHex()
+
+      await broadcastTx(signedHex);
       setTransaction(currentPsbt)
     } catch (e) {
       setError((e as Error).message);

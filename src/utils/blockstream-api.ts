@@ -43,5 +43,15 @@ export const getFeeRates = async () => {
 };
 
 export const broadcastTx = async (txHex: string) => {
-  throw new Error("Function not implemented yet");
+  try{
+    const { data } = await axios.post(
+      `${BASE_URL}/tx`,
+        txHex
+    );
+    return data;
+  }catch(err){
+    console.log(err)
+    throw new Error("Failed to broadcast tx");
+  }
+  
 };

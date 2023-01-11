@@ -12,11 +12,27 @@ import Transactions from "src/pages/Transactions";
 import Utxos from "src/pages/UTXOs";
 import Settings from "src/pages/Settings";
 
-import { Address, BlockstreamAPITransactionResponse, DecoratedTx, DecoratedUtxo } from "src/types";
-import { getNewMnemonic,getMasterPrivateKey, getXpubFromPrivateKey, deriveChildPublicKey, getAddressFromChildPubkey } from "./utils/bitcoinjs-lib";
-import { BIP32Interface } from "bip32";
-import { getTransactionsFromAddress, getUtxosFromAddress } from "./utils/blockstream-api";
+import {
+  getNewMnemonic,
+  getMasterPrivateKey,
+  getXpubFromPrivateKey,
+  deriveChildPublicKey,
+  getAddressFromChildPubkey,
+} from "./utils/bitcoinjs-lib";
+
+import {
+  getTransactionsFromAddress,
+  getUtxosFromAddress,
+} from "./utils/blockstream-api";
+
 import { serializeTxs } from "./utils";
+
+import {
+  Address,
+  BlockstreamAPITransactionResponse,
+  DecoratedTx,
+  DecoratedUtxo,
+} from "src/types";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,58 +48,59 @@ export default function App() {
   useEffect(() => {
     const getSeed = async () => {
       try {
-        //Get the Mnemonic words
-        let mnemonic:string = '';
-        if (process.env.REACT_APP_MNEMONIC){
-          mnemonic = process.env.REACT_APP_MNEMONIC
-        }else{
-          mnemonic = getNewMnemonic()
+        let newMnemonic = "";
+        if (process.env.REACT_APP_MNEMONIC) {
+          newMnemonic = process.env.REACT_APP_MNEMONIC;
+        } else {
+          newMnemonic = getNewMnemonic();
         }
-
-        //Set to globa l state
-        setMnemonic(mnemonic)
-
-        // Generate private key from mnemonic phrase
-        const privateKey:BIP32Interface = await getMasterPrivateKey(mnemonic)
-
-        //set privateKey to global state
-        setMasterFingerprint(privateKey.fingerprint)
-
-        const derivationPath:string = "m/84'/0'/0'"; // P2WPKH 
- 
-        // Generate extended public key
-        const xPubKey:string = getXpubFromPrivateKey(privateKey,derivationPath)
-        setXpub(xPubKey)
-
-
+        setMnemonic(newMnemonic);
+        const newMasterPrivateKey = await getMasterPrivateKey(mnemonic);
+        setMasterFingerprint(newMasterPrivateKey.fingerprint);
+        const derivationPath = "m/84'/0'/0'"; // P2WPKH
+        const newXpub = getXpubFromPrivateKey(
+          newMasterPrivateKey,
+          derivationPath
+        );
+        setXpub(newXpub);
       } catch (e) {
         console.log(e);
       }
     };
     getSeed();
-  }, []);
+  }, [mnemonic]);
 
   // Addresses
   useEffect(() => {
     try {
-      const currentAddresses:Address[] = []
-      const currentChangeAddresses:Address[] = []
-      for (let i = 0; i < 10; i++) {
-        //Receiving address
-        const currentDerivationPath = `0/${i}`
-        const currentChildPubKey = deriveChildPublicKey(xpub,currentDerivationPath)
-        const currentAddress = getAddressFromChildPubkey(currentChildPubKey);
-        currentAddresses.push({...currentAddress,derivationPath:currentDerivationPath,masterFingerprint:masterFingerprint})
+      const currentAddressBatch: Address[] = [];
 
-        //Change Address
-        const changeDerivationPath = `1/${i}`
-        const currentChildChangePubKey = deriveChildPublicKey(xpub,changeDerivationPath)
-        const currentChangeAddress = getAddressFromChildPubkey(currentChildChangePubKey);
-        currentChangeAddresses.push({...currentChangeAddress,derivationPath:changeDerivationPath,masterFingerprint:masterFingerprint})
-        
+      for (let i = 0; i < 10; i++) {
+        const derivationPath = `0/${i}`;
+        const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath);
+        const currentAddress = getAddressFromChildPubkey(currentChildPubkey);
+        currentAddressBatch.push({
+          ...currentAddress,
+          derivationPath,
+          masterFingerprint,
+        });
       }
-      setAddresses(currentAddresses)
-      setChangeAddresses(currentChangeAddresses)
+
+      setAddresses(currentAddressBatch);
+
+      const currentChangeAddressBatch: Address[] = [];
+      for (let i = 0; i < 10; i++) {
+        const derivationPath = `1/${i}`;
+        const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath);
+        const currentAddress = getAddressFromChildPubkey(currentChildPubkey);
+        currentChangeAddressBatch.push({
+          ...currentAddress,
+          derivationPath,
+          masterFingerprint,
+        });
+      }
+
+      setChangeAddresses(currentChangeAddressBatch);
     } catch (e) {
       console.log(e);
     }
@@ -93,17 +110,22 @@ export default function App() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-          const transactions:BlockstreamAPITransactionResponse[] = [] 
-          for(let i=0;i<10;i++){
-           
-            const address = addresses[i]
-            const transaction = await getTransactionsFromAddress(address)
+        const currentTransactionBatch: BlockstreamAPITransactionResponse[] = [];
+        for (let i = 0; i < 10; i++) {
+          const currentAddress = addresses[i];
+          const addressTransactions = await getTransactionsFromAddress(
+            currentAddress
+          );
+          currentTransactionBatch.push(...addressTransactions);
+        }
 
-            transactions.push(...transaction)
+        const serializedTxs = serializeTxs(
+          currentTransactionBatch,
+          addresses,
+          changeAddresses
+        );
 
-          }
-          const serializedTx = serializeTxs(transactions,addresses,changeAddresses)
-          setTransactions(serializedTx)
+        setTransactions(serializedTxs);
       } catch (e) {
         console.log(e);
       }
