@@ -12,12 +12,11 @@ import Transactions from "src/pages/Transactions";
 import Utxos from "src/pages/UTXOs";
 import Settings from "src/pages/Settings";
 
-import { Address, DecoratedTx, DecoratedUtxo } from "src/types";
+import { Address, BlockstreamAPITransactionResponse, DecoratedTx, DecoratedUtxo } from "src/types";
 import { getNewMnemonic,getMasterPrivateKey, getXpubFromPrivateKey, deriveChildPublicKey, getAddressFromChildPubkey } from "./utils/bitcoinjs-lib";
 import { BIP32Interface } from "bip32";
-import axios from 'axios'; 
-
-const BASE_URL = 'https://blockstream.info/api/address';
+import { getTransactionsFromAddress, getUtxosFromAddress } from "./utils/blockstream-api";
+import { serializeTxs } from "./utils";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,9 +33,14 @@ export default function App() {
     const getSeed = async () => {
       try {
         //Get the Mnemonic words
-        const mnemonic:string = getNewMnemonic()
+        let mnemonic:string = '';
+        if (process.env.REACT_APP_MNEMONIC){
+          mnemonic = process.env.REACT_APP_MNEMONIC
+        }else{
+          mnemonic = getNewMnemonic()
+        }
 
-        //Set to global state
+        //Set to globa l state
         setMnemonic(mnemonic)
 
         // Generate private key from mnemonic phrase
@@ -89,14 +93,17 @@ export default function App() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-          const transactions:DecoratedTx[] = [] 
-          for(let i=0;i<transactions.length;i++){
-            const { data } = await axios.get(`${BASE_URL}/${transactions[i]}/txs`);
-            console.log(data)
-            transactions.push(data)
+          const transactions:BlockstreamAPITransactionResponse[] = [] 
+          for(let i=0;i<10;i++){
+           
+            const address = addresses[i]
+            const transaction = await getTransactionsFromAddress(address)
+
+            transactions.push(...transaction)
 
           }
-          setTransactions(transactions)
+          const serializedTx = serializeTxs(transactions,addresses,changeAddresses)
+          setTransactions(serializedTx)
       } catch (e) {
         console.log(e);
       }
@@ -109,7 +116,29 @@ export default function App() {
   useEffect(() => {
     const fetchUtxos = async () => {
       try {
-        throw new Error("Function not implemented yet");
+        const allAddresses: Address[] = [...addresses, ...changeAddresses];
+        const deocratedUtxos: DecoratedUtxo[] = [];
+
+        for (let i = 0; i < allAddresses.length; i++) {
+          const currentAddress: Address = allAddresses[i];
+          const utxos = await getUtxosFromAddress(currentAddress);
+
+          for (let j = 0; j < utxos.length; j++) {
+            deocratedUtxos.push({
+              ...utxos[j],
+              address: currentAddress,
+              bip32Derivation: [
+                {
+                  pubkey: currentAddress.pubkey!,
+                  path: `m/84'/0'/0'/${currentAddress.derivationPath}`,
+                  masterFingerprint: masterFingerprint,
+                },
+              ],
+            });
+          }
+        }
+
+        setUtxos(deocratedUtxos);
       } catch (e) {
         console.log(e);
       }
