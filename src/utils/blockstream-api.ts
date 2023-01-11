@@ -10,7 +10,7 @@ export const getTransactionsFromAddress = async (
   address: Address
 ): Promise<BlockstreamAPITransactionResponse[]> => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/${address}/txs`);
+    const { data } = await axios.get(`${BASE_URL}/${address.address}/txs`);
     return data;
   } catch (err) {
     throw new Error("failed to get transactions");
@@ -34,7 +34,12 @@ export const getUtxosFromAddress = async (
 
 
 export const getFeeRates = async () => {
-  throw new Error("Function not implemented yet");
+  try {
+    return '1';
+  } catch (error) {
+    throw new Error("Can not get fee rate");
+  }
+  
 };
 
 export const broadcastTx = async (txHex: string) => {
