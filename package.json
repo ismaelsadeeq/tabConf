@@ -31,7 +31,7 @@
     "typescript": "^4.4.4"
   },
   "scripts": {
-    "start": "craco start",
+    "start": "craco --openssl-legacy-provider start ",
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject"
