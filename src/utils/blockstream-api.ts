@@ -18,6 +18,7 @@ export const getTransactionsFromAddress = async (
  
 };
 
+
 export const getUtxosFromAddress = async (
   address: Address
 ): Promise<BlockstreamAPIUtxoResponse[]> => {

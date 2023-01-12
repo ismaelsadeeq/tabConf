@@ -75,7 +75,7 @@ export default function App() {
     try {
       const currentAddressBatch: Address[] = [];
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 50; i++) {
         const derivationPath = `0/${i}`;
         const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath);
         const currentAddress = getAddressFromChildPubkey(currentChildPubkey);
@@ -89,7 +89,7 @@ export default function App() {
       setAddresses(currentAddressBatch);
 
       const currentChangeAddressBatch: Address[] = [];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 50; i++) {
         const derivationPath = `1/${i}`;
         const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath);
         const currentAddress = getAddressFromChildPubkey(currentChildPubkey);
@@ -111,14 +111,27 @@ export default function App() {
     const fetchTransactions = async () => {
       try {
         const currentTransactionBatch: BlockstreamAPITransactionResponse[] = [];
-        for (let i = 0; i < 10; i++) {
+
+        let count = 10
+        let i = 0
+        while(count > 0 && i !== 50){
           const currentAddress = addresses[i];
           const addressTransactions = await getTransactionsFromAddress(
             currentAddress
           );
+          const changeAddress = changeAddresses[i]
+          const changeAddressTransactions = await getTransactionsFromAddress(
+            changeAddress
+          );
+          if (addressTransactions.length === 0){
+            count-=1
+          }else{
+            count = 10
+          }
+          i+=1
           currentTransactionBatch.push(...addressTransactions);
+          currentTransactionBatch.push(...changeAddressTransactions);
         }
-
         const serializedTxs = serializeTxs(
           currentTransactionBatch,
           addresses,

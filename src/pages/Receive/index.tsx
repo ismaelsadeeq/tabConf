@@ -1,23 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 
 import { Address } from "src/types";
+import { getTransactionsFromAddress } from "src/utils/blockstream-api";
 
 interface Props {
   addresses: Address[];
 }
 
+
 export default function Receive({ addresses }: Props) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState<any>(null);
 
-  const getNewAddress = () => {
-    if (index < addresses.length - 1) {
-      setIndex(index + 1);
-    } else {
-      setIndex(0);
+  const getNewAddress = async () => {
+    let i:number= index;
+    while(i+1 < addresses.length){
+      i+=1
+      const address = addresses[i]
+      const transactions = await getTransactionsFromAddress(address)
+      if(transactions.length ===0 ){
+        setIndex(i)
+        break
+      }
     }
+    if (index === addresses.length -1) setIndex(0)
   };
-
+  const getInitialAddress = async ()=>{
+  
+    for (let i = 0; i < addresses.length; i++) {
+      const address = addresses[i]
+      const transactions = await getTransactionsFromAddress(address)
+      if(transactions.length === 0){
+        setIndex(i)
+        return;
+      }
+      
+    }
+    setIndex(0)
+  }
+  useEffect(()=>{
+    getInitialAddress()
+  },[])
   return (
     <div>
       <main className="flex-1">
