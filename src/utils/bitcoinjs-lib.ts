@@ -92,37 +92,37 @@ export const createTransaction = async (
   try{
     const feeRate = await getFeeRates();
 
-  const { inputs, outputs, fee } = coinselect(
-    utxos,
-    [
-      {
-        address: recipientAddress,
-        value: amountInSatoshis,
-      },
-    ],
-    parseInt(feeRate)
-  );
+    const { inputs, outputs, fee } = coinselect(
+      utxos,
+      [
+        {
+          address: recipientAddress,
+          value: amountInSatoshis,
+        },
+      ],
+      parseInt(feeRate)
+    );
 
-  if (!inputs || !outputs) throw new Error("Unable to send.. No UTXO available")
-  if (fee > amountInSatoshis) throw new Error("Invalid amount");
+    if (!inputs || !outputs) throw new Error("Unable to send.. No UTXO available")
+    if (fee > amountInSatoshis) throw new Error("Invalid amount");
 
-  const psbt = new Psbt({ network: networks.bitcoin });
-  psbt.setVersion(2); // These are defaults. This line is not needed.
-  psbt.setLocktime(0); // These are defaults. This line is not needed.
+    const psbt = new Psbt({ network: networks.bitcoin });
+    psbt.setVersion(2); // These are defaults. This line is not needed.
+    psbt.setLocktime(0); // These are defaults. This line is not needed.
 
-  inputs.forEach((input) => {
-    psbt.addInput({
-      hash: input.txid,
-      index: input.vout,
-      sequence: 0xfffffffd, // enables RBF
-      witnessUtxo: {
-        value: input.value,
-        script: input.address.output!,
-      },
-      bip32Derivation: input.bip32Derivation,
+    inputs.forEach((input) => {
+      psbt.addInput({
+        hash: input.txid,
+        index: input.vout,
+        sequence: 0xfffffffd, // enables RBF
+        witnessUtxo: {
+          value: input.value,
+          script: input.address.output!,
+        },
+        bip32Derivation: input.bip32Derivation,
+      });
     });
-  });
-
+  
   outputs.forEach((output) => {
     // coinselect doesnt apply address to change output, so add it here
     if (!output.address) {

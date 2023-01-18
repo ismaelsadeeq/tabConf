@@ -6,6 +6,7 @@ import {
 import axios from 'axios'; 
 
 const BASE_URL = 'https://blockstream.info/api/address';
+
 export const getTransactionsFromAddress = async (
   address: Address
 ): Promise<BlockstreamAPITransactionResponse[]> => {
